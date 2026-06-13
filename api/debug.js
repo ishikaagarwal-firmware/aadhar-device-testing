@@ -3,6 +3,7 @@ export default async function handler(req, res) {
   const kvToken = process.env.KV_REST_API_TOKEN;
   
   const debugData = {
+    envKeys: Object.keys(process.env),
     env: {
       hasKvUrl: !!kvUrl,
       hasKvToken: !!kvToken,

@@ -20,7 +20,10 @@ export async function getSessions() {
         body: JSON.stringify(['GET', SESSIONS_KEY])
       });
       const data = await res.json();
-      if (data && data.result) {
+      if (data && data.hasOwnProperty('result')) {
+        if (data.result === null) {
+          return [];
+        }
         return JSON.parse(data.result) || [];
       }
     } catch (err) {

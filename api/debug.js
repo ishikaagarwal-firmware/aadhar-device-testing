@@ -154,9 +154,13 @@ export default async function handler(req, res) {
         hasPassword: !!password
       };
 
-      // Try running standard command over TCP
-      const result = await runRedisCommand(host, port, isSecure, password, ['GET', 'sessions']);
-      debugData.redisTcpResult = result;
+      // Test SET then GET
+      const setRes = await runRedisCommand(host, port, isSecure, password, ['SET', 'test_key', 'hello_world']);
+      const getRes = await runRedisCommand(host, port, isSecure, password, ['GET', 'test_key']);
+      debugData.redisTcpResult = {
+        setRes,
+        getRes
+      };
     } catch (e) {
       debugData.redisTcpError = {
         message: e.message,

@@ -1,0 +1,8 @@
+# Exclude session databases and runtime logs
+logs/
+*.log
+
+# Exclude temporary scripts
+verify_fix.ps1
+test_wrap.ps1
+test_parse.ps1

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Telemetry Panel | L89 GNSS Module Tester</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Custom enhancements for the Admin page */
+        .admin-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 1rem;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.75rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .metric-card.success-border::before {
+            background: var(--success);
+        }
+
+        .metric-card.secondary-border::before {
+            background: var(--secondary);
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+            color: var(--text-main);
+        }
+
+        .metric-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+        }
+
+        .telemetry-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .telemetry-table th, .telemetry-table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .telemetry-table th {
+            background: rgba(15, 23, 42, 0.8);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .telemetry-table tbody tr {
+            background: rgba(15, 23, 42, 0.25);
+            transition: all var(--transition-fast);
+        }
+
+        .telemetry-table tbody tr:hover {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .status-active {
+            color: var(--success);
+            background-color: var(--success);
+        }
+
+        .status-offline {
+            color: var(--text-muted);
+            background-color: var(--text-muted);
+            box-shadow: none;
+        }
+
+        .passcode-card {
+            max-width: 400px;
+            margin: 5rem auto;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(6, 182, 212, 0.05);
+        }
+
+        .passcode-header {
+            margin-bottom: 1.75rem;
+        }
+
+        .passcode-icon {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(6, 182, 212, 0.08);
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .header-action-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars-bg"></div>
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+
+    <!-- PASSCODE PROMPT CARD -->
+    <div class="passcode-card glass-card" id="adminAuthCard">
+        <div class="passcode-header">
+            <div class="passcode-icon">
+                <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h2 style="font-size: 1.35rem; font-weight: 700; letter-spacing: -0.5px;">Admin Control Access</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Enter security passcode to unlock telemetry</p>
+        </div>
+        <div style="margin-bottom: 1.5rem; text-align: left;">
+            <label for="adminPasscode" style="display: block; font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; font-family: 'Orbitron', sans-serif;">Security Passcode</label>
+            <input type="password" id="adminPasscode" placeholder="••••••••" class="input-glass" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; text-align: center; letter-spacing: 4px;" required>
+        </div>
+        <button id="adminLoginBtn" class="btn btn-primary" style="width: 100%; font-weight: 600; padding: 0.75rem;">
+            Authenticate & Open
+        </button>
+        <div id="adminAuthError" style="display: none; margin-top: 1rem; color: #f87171; font-size: 0.85rem; font-weight: 500;">
+            Invalid passcode. Please try again.
+        </div>
+    </div>
+
+    <!-- TELEMETRY DASHBOARD -->
+    <div class="admin-container" id="adminDashboard" style="display: none;">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Admin Telemetry Portal</h1>
+                    <p class="subtitle">Real-time Diagnostic Session Telemetry & Logs</p>
+                </div>
+            </div>
+            <div class="header-right" style="gap: 1rem;">
+                <div class="badge fix-none" id="refreshTimerBadge" style="font-family: 'Orbitron', sans-serif; font-size: 0.78rem;">
+                    REFRESHING IN 3s
+                </div>
+                <button id="adminLogoutBtn" class="btn btn-danger header-action-btn">
+                    Lock Portal
+                </button>
+            </div>
+        </header>
+
+        <!-- METRICS CARDS -->
+        <section class="metrics-grid">
+            <div class="metric-card glass-card">
+                <span class="metric-label">Total Unique Users</span>
+                <span class="metric-value font-orbitron text-cyan" id="metricTotalUsers">0</span>
+            </div>
+            <div class="metric-card glass-card success-border">
+                <span class="metric-label">Active Users</span>
+                <span class="metric-value font-orbitron text-green" id="metricActiveUsers">0</span>
+            </div>
+            <div class="metric-card glass-card secondary-border">
+                <span class="metric-label">Total Cumulative Duration</span>
+                <span class="metric-value font-orbitron" id="metricTotalDuration" style="color: var(--secondary);">00:00:00</span>
+            </div>
+        </section>
+
+        <!-- MAIN TABLE -->
+        <section class="glass-card" style="padding: 1.5rem 0;">
+            <div style="padding: 0 1.5rem 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.5rem;">
+                <h2 style="font-size: 1.05rem; font-family: 'Orbitron', sans-serif;">DIAGNOSTIC SESSION HISTORY</h2>
+                <button id="refreshLogsBtn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; font-weight: 500;">
+                    Refresh Now
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="telemetry-table">
+                    <thead>
+                        <tr>
+                            <th>User Email</th>
+                            <th>Login Time</th>
+                            <th>Last Active</th>
+                            <th>Usage Duration</th>
+                            <th>Session Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="telemetryTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                                No logs fetched yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

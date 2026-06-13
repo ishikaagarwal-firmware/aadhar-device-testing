@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L89 GNSS Module Diagnostic & Tester | Premium UI</title>
+    <meta name="description" content="A real-time diagnostic and testing portal for the Quectel L89 GNSS module. Tracks active antenna power, satellite lock states, and NMEA logs.">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="stars-bg"></div>
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="22" x2="18" y1="12" y2="12"></line>
+                        <line x1="6" x2="2" y1="12" y2="12"></line>
+                        <line x1="12" x2="12" y1="6" y2="2"></line>
+                        <line x1="12" x2="12" y1="22" y2="18"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h1>L89 GNSS Module Tester</h1>
+                    <p class="subtitle">Hardware Diagnostics & Satellite Tracking Portal</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="logoutBtn" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem; display: none; align-items: center; gap: 4px;">
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" x2="9" y1="12" y2="12"></line>
+                    </svg>
+                    Logout
+                </button>
+                <div class="badge status-disconnected" id="connStatusBadge">
+                    <span class="pulse-dot"></span>
+                    <span class="badge-text">DISCONNECTED</span>
+                </div>
+                <div class="badge fix-none" id="fixStatusBadge">
+                    <span class="pulse-dot"></span>
+                    <span class="badge-text">NO LOCK</span>
+                </div>
+                <div class="badge antenna-unknown" id="antennaStatusBadge">
+                    <span class="pulse-dot"></span>
+                    <span class="badge-text">ANTENNA: UNKNOWN</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTROL BAR -->
+        <section class="control-panel glass-card">
+            <div class="control-group">
+                <label for="baudRateSelect">Baud Rate:</label>
+                <select id="baudRateSelect" class="input-glass">
+                    <option value="115200">115200</option>
+                    <option value="9600" selected>9600 (Default)</option>
+                    <option value="4800">4800</option>
+                    <option value="19200">19200</option>
+                    <option value="38400">38400</option>
+                    <option value="57600">57600</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button id="connectBtn" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" x2="12" y1="2" y2="12"></line>
+                    </svg>
+                    Connect Device
+                </button>
+                <button id="disconnectBtn" class="btn btn-danger" disabled>
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    </svg>
+                    Disconnect
+                </button>
+                <button id="coldStartBtn" class="btn btn-secondary" disabled>
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                    </svg>
+                    Cold Start Module
+                </button>
+            </div>
+        </section>
+
+        <!-- TOP NAVIGATION -->
+        <nav class="top-nav glass-card">
+            <span class="nav-label">MODE:</span>
+            <button id="navGpsTestBtn" class="nav-tab-btn active">GPS Test</button>
+            <button id="navCmdTestBtn" class="nav-tab-btn">Command Test</button>
+        </nav>
+
+        <!-- GPS TEST VIEW -->
+        <div id="gpsTestView">
+            <!-- DIAGNOSTIC GRID -->
+            <main class="diagnostic-grid">
+            <!-- COLUMN 1: HARDWARE DIAGNOSTICS & POWER -->
+            <div class="grid-column">
+                <!-- POWER DIAGNOSTICS CARD -->
+                <section class="glass-card" id="powerDiagnosticsCard">
+                    <div class="card-header">
+                        <h2>Power & Hardware Health</h2>
+                        <span class="card-glow-dot text-cyan"></span>
+                    </div>
+                    
+                    <div class="diagnostic-list">
+                        <div class="diag-item" id="diagVcc">
+                            <div class="diag-label">
+                                <span class="icon">⚡</span>
+                                <div>
+                                    <h3>Module VCC Power</h3>
+                                    <p class="description">Checks if serial packets are arriving from module</p>
+                                </div>
+                            </div>
+                            <div class="diag-value text-red" id="vccValue">INACTIVE</div>
+                        </div>
+
+                        <div class="diag-item" id="diagAntennaPower">
+                            <div class="diag-label">
+                                <span class="icon">🔌</span>
+                                <div>
+                                    <h3>Active Antenna Power</h3>
+                                    <p class="description">Power delivery state to active GNSS antenna</p>
+                                </div>
+                            </div>
+                            <div class="diag-value" id="antPowerValue">UNKNOWN</div>
+                        </div>
+
+                        <div class="diag-item" id="diagAntennaPath">
+                            <div class="diag-label">
+                                <span class="icon">🛰️</span>
+                                <div>
+                                    <h3>Antenna Mode Path</h3>
+                                    <p class="description">Currently selected antenna path in the L89</p>
+                                </div>
+                            </div>
+                            <div class="diag-value" id="antPathValue">UNKNOWN</div>
+                        </div>
+
+                        <div class="diag-item" id="diagAntennaStatus">
+                            <div class="diag-label">
+                                <span class="icon">🛡️</span>
+                                <div>
+                                    <h3>Antenna Connection Status</h3>
+                                    <p class="description">Monitors for open loops or short-circuits</p>
+                                </div>
+                            </div>
+                            <div class="diag-value" id="antStatusValue">UNKNOWN</div>
+                        </div>
+                    </div>
+
+                    <!-- Critical Warnings Container -->
+                    <div class="warning-container" id="warningsContainer">
+                        <div class="alert-box alert-info">
+                            <div class="alert-title">Waiting for device connection</div>
+                            <div class="alert-desc">Connect the L89 module serial port to analyze power and hardware parameters.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- POSITION & NETWORK LOCK STATUS -->
+                <section class="glass-card" id="lockStatusCard">
+                    <div class="card-header">
+                        <h2>Position & Network Lock</h2>
+                        <span class="card-glow-dot text-green"></span>
+                    </div>
+
+                    <div class="network-lock-status">
+                        <div class="network-badge not-connected" id="networkLockBadge">
+                            NOT NETWORK CONNECTED
+                        </div>
+                        <div class="network-explanation" id="networkLockExplanation">
+                            Connect your device to evaluate network lock.
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <tr>
+                            <td>Lock Type:</td>
+                            <td id="lockTypeValue" class="font-orbitron font-bold text-red">No Fix</td>
+                        </tr>
+                        <tr>
+                            <td>Satellites in Use:</td>
+                            <td id="satsInUseValue" class="font-orbitron">0</td>
+                        </tr>
+                        <tr>
+                            <td>Satellites in View:</td>
+                            <td id="satsInViewValue" class="font-orbitron">0</td>
+                        </tr>
+                        <tr>
+                            <td>Average SNR (Signal):</td>
+                            <td id="avgSnrValue" class="font-orbitron">0.0 dBHz</td>
+                        </tr>
+                        <tr>
+                            <td>Latitude:</td>
+                            <td id="latitudeValue" class="font-mono">--.------°</td>
+                        </tr>
+                        <tr>
+                            <td>Longitude:</td>
+                            <td id="longitudeValue" class="font-mono">--.------°</td>
+                        </tr>
+                        <tr>
+                            <td>Altitude:</td>
+                            <td id="altitudeValue" class="font-mono">--.- m</td>
+                        </tr>
+                        <tr>
+                            <td>HDOP (Accuracy):</td>
+                            <td id="hdopValue" class="font-mono">--.-</td>
+                        </tr>
+                        <tr>
+                            <td>UTC Time:</td>
+                            <td id="timeValue" class="font-mono">--:--:--</td>
+                        </tr>
+                    </table>
+                </section>
+
+            </div>
+
+            <!-- COLUMN 2: REAL-TIME VISUALIZATIONS -->
+            <div class="grid-column">
+                <!-- SKYPLOT RADAR CARD -->
+                <section class="glass-card radar-card">
+                    <div class="card-header">
+                        <h2>Skyplot Satellite Radar</h2>
+                        <div class="legend">
+                            <span class="legend-item"><span class="dot gps"></span>GPS</span>
+                            <span class="legend-item"><span class="dot glonass"></span>GLO</span>
+                            <span class="legend-item"><span class="dot beidou"></span>BDS</span>
+                            <span class="legend-item"><span class="dot galileo"></span>GAL</span>
+                            <span class="legend-item"><span class="dot navic"></span>NavIC</span>
+                        </div>
+                    </div>
+                    
+                    <div class="radar-container">
+                        <canvas id="radarCanvas" width="340" height="340"></canvas>
+                        <div class="radar-scan-overlay"></div>
+                    </div>
+                </section>
+
+                <!-- SIGNAL STRENGTH CHART -->
+                <section class="glass-card signal-chart-card">
+                    <div class="card-header">
+                        <h2>Signal Strengths (SNR)</h2>
+                        <div class="legend">
+                            <span class="legend-item"><span class="bar-color green"></span>Excellent</span>
+                            <span class="legend-item"><span class="bar-color amber"></span>Moderate</span>
+                            <span class="legend-item"><span class="bar-color red"></span>Weak</span>
+                        </div>
+                    </div>
+                    
+                    <div class="snr-chart-container">
+                        <div class="snr-bars" id="snrBarsContainer">
+                            <div class="no-data-snr">Waiting for GSV data...</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- TERMINAL LOG PANEL -->
+        <section class="glass-card terminal-card">
+            <div class="terminal-header">
+                <div class="terminal-title">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span style="margin-left: 0.5rem; font-weight: 600;">NMEA Data Feed Terminal</span>
+                </div>
+                <div class="terminal-controls">
+                    <select id="nmeaFilterSelect" class="input-glass select-small">
+                        <option value="ALL">Show All Messages</option>
+                        <option value="GGA">GGA (Fix Info)</option>
+                        <option value="GSA">GSA (Active Sats)</option>
+                        <option value="GSV">GSV (Sats in View)</option>
+                        <option value="ANTENNA">Antenna Status</option>
+                    </select>
+                    <button id="pauseLogBtn" class="btn btn-small">Pause</button>
+                    <button id="clearLogBtn" class="btn btn-small">Clear</button>
+                    <button id="copyLogBtn" class="btn btn-small">Copy Log</button>
+                </div>
+            </div>
+            <div class="terminal-body" id="terminalLog">
+                <div class="terminal-line system-msg">[SYSTEM] L89 Diagnostic Portal ready. Select baud rate and click "Connect Device" to begin monitoring.</div>
+            </div>
+        </section>
+        </div> <!-- END gpsTestView -->
+
+        <!-- COMMAND TEST VIEW -->
+        <div id="commandTestView" style="display: none; width: 100%;">
+            <div class="glass-card" style="padding: 2rem; max-width: 900px; margin: 0 auto;">
+                <!-- HEADER & STATUS -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: 700; color: #ffffff; margin-bottom: 0.25rem;">GPS Device Tester</h2>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Verify device connectivity and location services</p>
+                    </div>
+                    <!-- Status Badge -->
+                    <div class="badge status-disconnected" id="cmdTesterStatusBadge" style="padding: 0.5rem 1rem; border-radius: 20px;">
+                        <span class="pulse-dot"></span>
+                        <span class="badge-text" id="cmdTesterStatusText">Disconnected</span>
+                    </div>
+                </div>
+
+                <!-- PROFILE SELECTOR -->
+                <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.4); padding: 0.5rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); width: fit-content;">
+                    <span style="color: var(--text-muted); font-size: 0.85rem; font-family: 'Orbitron', sans-serif; font-weight: 600; padding: 0 0.5rem;">TARGET PROFILE:</span>
+                    <button id="profileBobBtn" class="btn btn-small" style="padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; font-family: 'Orbitron', sans-serif; background: var(--primary); color: #000000; border-color: var(--primary); text-shadow: none; box-shadow: 0 0 10px var(--primary-glow); cursor: pointer; transition: all 0.2s ease;">
+                        BOB
+                    </button>
+                    <button id="profileSbiBtn" class="btn btn-small" style="padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; font-family: 'Orbitron', sans-serif; background: transparent; border-color: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease;">
+                        SBI
+                    </button>
+                </div>
+
+                <!-- CONTROLS ROW -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center; flex-wrap: wrap;">
+                    <button id="cmdConnectBtn" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; font-weight: 600; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #93c5fd;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                            <line x1="12" x2="12" y1="2" y2="12"></line>
+                        </svg>
+                        CONNECT DEVICE
+                    </button>
+                    <button id="cmdDisconnectBtn" class="btn btn-secondary" disabled style="padding: 0.75rem 1.5rem; font-weight: 600;">
+                        Disconnect
+                    </button>
+                    <button id="cmdRunTestBtn" class="btn btn-primary" disabled style="padding: 0.75rem 2rem; font-weight: 700; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);">
+                        Run Device Test
+                    </button>
+                </div>
+
+                <!-- CONTENT AREA -->
+                <!-- Instruction Card (Visible when not tested or disconnected) -->
+                <div id="cmdInstructionsCard" style="display: block;">
+                    <div style="background: rgba(59, 130, 246, 0.07); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; color: #60a5fa; font-weight: 600; font-size: 1.05rem; margin-bottom: 1.25rem;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" x2="12" y1="16" y2="12"></line>
+                                <line x1="12" x2="12.01" y1="8" y2="8"></line>
+                            </svg>
+                            How to Connect Your GPS Device
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; gap: 1rem; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
+                                <div style="background: rgba(96, 165, 250, 0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #60a5fa; font-weight: 700; flex-shrink: 0;">1</div>
+                                <div>
+                                    <h4 style="color: #ffffff; font-size: 0.95rem; margin-bottom: 0.25rem; font-weight: 600;">Connect your GPS device</h4>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.45;">Plug your GPS8.0 device into an available USB port on your computer.</p>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
+                                <div style="background: rgba(96, 165, 250, 0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #60a5fa; font-weight: 700; flex-shrink: 0;">2</div>
+                                <div>
+                                    <h4 style="color: #ffffff; font-size: 0.95rem; margin-bottom: 0.25rem; font-weight: 600;">Click "Connect Device" button</h4>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.45;">After clicking, a popup will appear asking you to select a serial port.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Running Loader -->
+                <div id="cmdTestLoader" style="display: none; padding: 3rem 0; text-align: center;">
+                    <div style="width: 48px; height: 48px; border: 4px solid rgba(6, 182, 212, 0.1); border-left-color: var(--primary); border-radius: 50%; animation: radarSweep 1s infinite linear; margin: 0 auto 1rem;"></div>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;" id="cmdLoaderText">Querying hardware device info...</p>
+                </div>
+
+                <!-- Results Output Card (Visible after test is completed) -->
+                <div id="cmdResultsCard" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <!-- Left: Device Properties -->
+                        <div class="glass-card" style="background: rgba(15, 23, 42, 0.4); padding: 1.25rem;">
+                            <h3 style="font-size: 0.95rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-family: 'Orbitron', sans-serif;">Device Identity</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">Serial Number:</span>
+                                    <span style="font-weight: 600; color: #ffffff;" id="resSerial">--</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">Firmware Version:</span>
+                                    <span style="font-weight: 600; color: #ffffff;" id="resFirmware">--</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">Manufacturer Make:</span>
+                                    <span style="font-weight: 600; color: #ffffff;" id="resMake">RAIVENS</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">Battery Voltage:</span>
+                                    <span style="font-weight: 600; color: #ffffff;" id="resBattery">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Execution Status -->
+                        <div class="glass-card" style="background: rgba(15, 23, 42, 0.4); padding: 1.25rem; display: flex; flex-direction: column; justify-content: center; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="font-size: 0.95rem; color: var(--text-muted); font-family: 'Orbitron', sans-serif; min-width: 80px;">Result:</span>
+                                <span class="badge response-badge success" id="resBadge" style="font-size: 0.85rem; padding: 4px 10px;">SUCCESS</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span style="font-size: 0.95rem; color: var(--text-muted); font-family: 'Orbitron', sans-serif; min-width: 80px;">Message:</span>
+                                <span style="color: #4ade80; font-size: 0.9rem; font-weight: 600;" id="resMessage">Command executed successfully</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Console Box showing TX/RX raw logs -->
+                    <div class="glass-card" style="background: rgba(4, 6, 10, 0.95); border: 1px solid var(--border-glass); padding: 1.25rem;">
+                        <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; font-family: 'Orbitron', sans-serif; letter-spacing: 0.5px;">SERIAL CONSOLE LOGS</h3>
+                        <div id="cmdLogTerminal" style="font-family: 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.6; color: #a5f3fc; overflow-y: auto; max-height: 180px;">
+                            <!-- TX and RX logs will go here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HARDWARE MODE CONVERSION CARD (Always visible in Command Test view) -->
+                <div id="cmdConversionCard" class="glass-card" style="background: rgba(15, 23, 42, 0.3); padding: 1.25rem; margin-top: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.05);">
+                    <h3 style="font-size: 0.95rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-family: 'Orbitron', sans-serif;">HARDWARE MODE CONVERSION</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem; line-height: 1.45;">
+                        Permanently convert the device mode by writing configuration changes directly to its non-volatile flash memory.
+                    </p>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button id="convertBobBtn" class="btn btn-secondary" disabled style="padding: 0.6rem 1.2rem; font-weight: 600; border-color: rgba(245, 158, 11, 0.25); color: #fcd34d; background: rgba(245, 158, 11, 0.05);">
+                            Apply BOB Mode
+                        </button>
+                        <button id="convertSbiBtn" class="btn btn-secondary" disabled style="padding: 0.6rem 1.2rem; font-weight: 600; border-color: rgba(139, 92, 246, 0.25); color: #c084fc; background: rgba(139, 92, 246, 0.05);">
+                            Apply SBI Mode
+                        </button>
+                    </div>
+                    <!-- Conversion Status Alert -->
+                    <div id="conversionStatusBox" style="display: none; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; line-height: 1.45;">
+                        <!-- Status message will go here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ERROR MODAL -->
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h2>Connection Error</h2>
+                <button class="modal-close" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorModalMessage">An error occurred while connecting to the serial device.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="errorModalOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN OVERLAY MODAL -->
+    <div class="login-overlay" id="loginOverlay" style="display: flex;">
+        <div class="login-card glass-card">
+            <div class="login-header">
+                <div class="logo-icon-large">
+                    <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--primary)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="22" x2="18" y1="12" y2="12"></line>
+                        <line x1="6" x2="2" y1="12" y2="12"></line>
+                        <line x1="12" x2="12" y1="6" y2="2"></line>
+                        <line x1="12" x2="12" y1="22" y2="18"></line>
+                    </svg>
+                </div>
+                <h2>Diagnostic Portal Access</h2>
+                <p class="subtitle text-cyan font-orbitron" style="font-size: 0.85rem; margin-top: 0.25rem;">IDENTIFICATION REQUIRED</p>
+            </div>
+            
+            <!-- Email Login Step -->
+            <div class="login-step" id="loginStepEmail">
+                <p class="login-description" style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.4; margin-bottom: 1.25rem;">
+                    Enter your email address to unlock the diagnostic console. This session will be tracked for active usage telemetry.
+                </p>
+                <div style="margin-bottom: 1.25rem; text-align: left;">
+                    <label for="loginEmail" style="display: block; font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; font-family: 'Orbitron', sans-serif;">Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="name@example.com" class="input-glass" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px;" required>
+                </div>
+                <button id="sendOtpBtn" class="btn btn-primary" style="width: 100%; display: flex; justify-content: center; align-items: center; font-weight: 600; padding: 0.75rem;">
+                    Login & Unlock Portal
+                </button>
+            </div>
+
+            <!-- Login Status/Alert -->
+            <div id="loginStatus" class="alert-box" style="display: none; margin-top: 1.25rem; text-align: left;">
+                <div class="alert-title" id="loginStatusTitle" style="font-weight: 700;">Status</div>
+                <div class="alert-desc" id="loginStatusDesc" style="font-size: 0.82rem; margin-top: 0.25rem; line-height: 1.4;">Details...</div>
+            </div>
+            
+            <div class="login-footer-info" style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.25rem;">
+                <span>🔒</span> Secure Local Diagnostic Session
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

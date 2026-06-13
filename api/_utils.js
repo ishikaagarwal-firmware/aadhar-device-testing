@@ -11,8 +11,13 @@ const kvToken = process.env.KV_REST_API_TOKEN;
 export async function getSessions() {
   if (kvUrl && kvToken) {
     try {
-      const res = await fetch(`${kvUrl}/get/${SESSIONS_KEY}`, {
-        headers: { Authorization: `Bearer ${kvToken}` }
+      const res = await fetch(kvUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${kvToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(['GET', SESSIONS_KEY])
       });
       const data = await res.json();
       if (data && data.result) {
@@ -43,10 +48,13 @@ export async function saveSessions(sessions) {
 
   if (kvUrl && kvToken) {
     try {
-      const res = await fetch(`${kvUrl}/set/${SESSIONS_KEY}`, {
+      const res = await fetch(kvUrl, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${kvToken}` },
-        body: jsonStr
+        headers: {
+          Authorization: `Bearer ${kvToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(['SET', SESSIONS_KEY, jsonStr])
       });
       const data = await res.json();
       if (data && data.result === 'OK') {

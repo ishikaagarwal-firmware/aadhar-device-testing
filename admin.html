@@ -236,27 +236,50 @@
             </div>
             
             <div class="table-responsive">
-                <table class="telemetry-table">
-                    <thead>
-                        <tr>
-                            <th>User Email</th>
-                            <th>Login Time</th>
-                            <th>Last Active</th>
-                            <th>Usage Duration</th>
-                            <th>Session Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="telemetryTableBody">
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 3rem;">
-                                No logs fetched yet.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </div>
+                 <table class="telemetry-table">
+                     <thead>
+                         <tr>
+                             <th>User Email</th>
+                             <th>Login Time</th>
+                             <th>Last Active</th>
+                             <th>Usage Duration</th>
+                             <th>Session Status</th>
+                             <th>Actions</th>
+                         </tr>
+                     </thead>
+                     <tbody id="telemetryTableBody">
+                         <tr>
+                             <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                                 No logs fetched yet.
+                             </td>
+                         </tr>
+                     </tbody>
+                 </table>
+             </div>
+         </section>
+
+         <!-- AUTHORIZED EMAILS WHITELIST -->
+         <section class="glass-card" style="padding: 1.5rem;">
+             <div style="padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 1.25rem;">
+                 <h2 style="font-size: 1.05rem; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">Authorized Email Whitelist</h2>
+                 <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem;">Only emails on this list are permitted to log in to the diagnostics dashboard.</p>
+             </div>
+             
+             <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                 <input type="email" id="newWhitelistEmail" placeholder="name@example.com" class="input-glass" style="flex: 1; min-width: 250px; padding: 0.6rem 1rem; border-radius: 6px;">
+                 <button id="addWhitelistBtn" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-weight: 600; font-size: 0.85rem; border-radius: 6px;">
+                     Authorize Email
+                 </button>
+             </div>
+
+             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;" id="whitelistGrid">
+                 <!-- Whitelist items will be rendered here dynamically -->
+                 <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                     Loading whitelist...
+                 </div>
+             </div>
+         </section>
+     </div>
 
     <script src="admin.js"></script>
 </body>

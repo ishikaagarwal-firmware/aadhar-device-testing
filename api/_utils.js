@@ -5,6 +5,12 @@ import tls from 'tls';
 
 const SESSIONS_KEY = 'sessions';
 const TEMP_FILE = path.join('/tmp', 'sessions.json');
+const ALLOWED_EMAILS_KEY = 'allowed_emails';
+const TEMP_ALLOWED_FILE = path.join('/tmp', 'allowed_emails.json');
+const DEFAULT_ALLOWED = [
+  'gaurav.oytechnology@gmail.com',
+  'gaurav.oytechnology1@gmail.com'
+];
 
 // Get Vercel KV config
 const kvUrl = process.env.KV_REST_API_URL;
@@ -269,4 +275,127 @@ export function updateSessionStatuses(sessions) {
   }
 
   return { sessions, changed };
+}
+
+export async function getAllowedEmails() {
+  // 1. Try REDIS_URL first
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    try {
+      const u = new URL(redisUrl);
+      const host = u.hostname;
+      const password = u.password || u.username;
+      const port = u.port || 6379;
+      const isSecure = u.protocol === 'rediss:';
+
+      const res = await runRedisCommand(host, port, isSecure, password, ['GET', ALLOWED_EMAILS_KEY]);
+      if (res === null) {
+        // Seed database with default allowed emails if key doesn't exist
+        await saveAllowedEmails(DEFAULT_ALLOWED);
+        return DEFAULT_ALLOWED;
+      }
+      return JSON.parse(res) || DEFAULT_ALLOWED;
+    } catch (err) {
+      console.error('Failed to fetch allowed emails from Redis:', err);
+    }
+  }
+
+  // 2. Try Vercel KV REST API fallback
+  if (kvUrl && kvToken) {
+    try {
+      const res = await fetch(kvUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${kvToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(['GET', ALLOWED_EMAILS_KEY])
+      });
+      const data = await res.json();
+      if (data && data.hasOwnProperty('result')) {
+        if (data.result === null) {
+          await saveAllowedEmails(DEFAULT_ALLOWED);
+          return DEFAULT_ALLOWED;
+        }
+        return JSON.parse(data.result) || DEFAULT_ALLOWED;
+      }
+    } catch (err) {
+      console.error('Failed to fetch allowed emails from Vercel KV REST API:', err);
+    }
+  }
+
+  // 3. Fallback to local /tmp file
+  try {
+    if (fs.existsSync(TEMP_ALLOWED_FILE)) {
+      const data = fs.readFileSync(TEMP_ALLOWED_FILE, 'utf8');
+      if (data) {
+        return JSON.parse(data) || DEFAULT_ALLOWED;
+      }
+    } else {
+      // Seed fallback
+      fs.writeFileSync(TEMP_ALLOWED_FILE, JSON.stringify(DEFAULT_ALLOWED), 'utf8');
+      return DEFAULT_ALLOWED;
+    }
+  } catch (err) {
+    console.error('Failed to read from fallback allowed emails file:', err);
+  }
+
+  return DEFAULT_ALLOWED;
+}
+
+export async function saveAllowedEmails(emails) {
+  const jsonStr = JSON.stringify(emails);
+
+  // 1. Try REDIS_URL first
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    try {
+      const u = new URL(redisUrl);
+      const host = u.hostname;
+      const password = u.password || u.username;
+      const port = u.port || 6379;
+      const isSecure = u.protocol === 'rediss:';
+
+      const res = await runRedisCommand(host, port, isSecure, password, ['SET', ALLOWED_EMAILS_KEY, jsonStr]);
+      if (res === 'OK') {
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to save allowed emails to Redis:', err);
+    }
+  }
+
+  // 2. Try Vercel KV REST API fallback
+  if (kvUrl && kvToken) {
+    try {
+      const res = await fetch(kvUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${kvToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(['SET', ALLOWED_EMAILS_KEY, jsonStr])
+      });
+      const data = await res.json();
+      if (data && data.result === 'OK') {
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to save allowed emails to Vercel KV REST API:', err);
+    }
+  }
+
+  // 3. Fallback to local /tmp file
+  try {
+    const dir = path.dirname(TEMP_ALLOWED_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(TEMP_ALLOWED_FILE, jsonStr, 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Failed to write allowed emails to fallback file:', err);
+  }
+
+  return false;
 }

@@ -1,4 +1,4 @@
-import { getSessions, saveSessions, updateSessionStatuses } from './_utils.js';
+import { getSessions, saveSessions, updateSessionStatuses, getAllowedEmails, saveAllowedEmails } from './_utils.js';
 
 const ADMIN_PASSCODE = 'admin123';
 
@@ -18,10 +18,13 @@ export default async function handler(req, res) {
 
   // Allow both POST and GET
   let passcode = '';
+  let action = '';
   if (req.method === 'POST') {
     passcode = req.body?.passcode;
+    action = req.body?.action;
   } else {
     passcode = req.query?.passcode;
+    action = req.query?.action;
   }
 
   if (passcode !== ADMIN_PASSCODE) {
@@ -29,7 +32,45 @@ export default async function handler(req, res) {
   }
 
   let sessions = await getSessions();
-  
+  let allowedEmails = await getAllowedEmails();
+
+  if (req.method === 'POST' && action) {
+    if (action === 'add_allowed_email') {
+      const email = req.body?.email?.trim();
+      if (email && email.includes('@')) {
+        if (!allowedEmails.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+          allowedEmails.push(email);
+          await saveAllowedEmails(allowedEmails);
+        }
+      }
+    } 
+    else if (action === 'remove_allowed_email') {
+      const email = req.body?.email?.trim();
+      if (email) {
+        allowedEmails = allowedEmails.filter(e => e.toLowerCase() !== email.toLowerCase());
+        await saveAllowedEmails(allowedEmails);
+      }
+    } 
+    else if (action === 'terminate_session') {
+      const token = req.body?.token;
+      if (token) {
+        const session = sessions.find(s => s && s.token === token);
+        if (session) {
+          session.status = 'OFFLINE';
+          session.lastActive = new Date().toISOString();
+          await saveSessions(sessions);
+        }
+      }
+    } 
+    else if (action === 'delete_session') {
+      const token = req.body?.token;
+      if (token) {
+        sessions = sessions.filter(s => s && s.token !== token);
+        await saveSessions(sessions);
+      }
+    }
+  }
+
   // Sweep inactive sessions
   const sweep = updateSessionStatuses(sessions);
   sessions = sweep.sessions;
@@ -38,5 +79,5 @@ export default async function handler(req, res) {
     await saveSessions(sessions);
   }
 
-  return res.status(200).json({ success: true, sessions });
+  return res.status(200).json({ success: true, sessions, allowedEmails });
 }
